@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pvta_backend_spring.pvta.entities.Usuario;
+import pvta_backend_spring.pvta.modules.productos.model.ProductosModel;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
 import pvta_backend_spring.pvta.modules.productos.service.ProductosService;
 import pvta_backend_spring.pvta.utiles.Utiles;
@@ -22,6 +23,12 @@ public class ProductosController {
     public ResponseEntity<?> grabar(@RequestHeader("Authorization") String token, @RequestBody ProductosDTO data) throws SQLException {
         Usuario usu = utiles.leerToken(token);
         return ResponseEntity.ok().body(productosService.grabar(usu, data));
+    }
+
+    @PostMapping("/actualizar")
+    public void actualizarProductos(@RequestHeader("Authorization") String token, @RequestBody ProductosModel data) throws SQLException, IllegalAccessException {
+        Usuario usu = utiles.leerToken(token);
+        productosService.actualizar(usu, data);
     }
 
     @GetMapping

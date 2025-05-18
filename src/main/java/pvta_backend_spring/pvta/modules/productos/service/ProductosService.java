@@ -75,9 +75,38 @@ public class ProductosService {
     }
 
 
-    public ResponseDTO<ProductosModel> actualizar(Usuario usu, ProductosDTO productos) throws SQLException {
+    public void actualizar(Usuario usu, ProductosModel productos) throws SQLException, IllegalAccessException {
+        @Cleanup Connection conn = cone.getConnection(usu);
+        StringBuilder sql = new StringBuilder("UPDATE public.productos SET ");
+        List<Object> valores = new ArrayList<>();
 
-        return null;
+        for (var field : ProductosModel.class.getDeclaredFields()) {
+            field.setAccessible(true);
+            String nombreCampo = field.getName();
+            Object valor = field.get(productos);
+            if (nombreCampo.equals("id")) {
+                continue;
+            }
+            if (valor != null) {
+                if (valor instanceof Number && ((Number) valor).doubleValue() == 0) {
+                    continue;
+                }
+                sql.append(convertirNombreCampo(nombreCampo)).append(" = ?, ");
+                valores.add(valor);
+            }
+        }
+
+        if (valores.isEmpty()) {
+            throw new IllegalArgumentException("No hay datos para actualizar.");
+        }
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE id = ?");
+        valores.add(productos.getId());
+        @Cleanup PreparedStatement ps = conn.prepareStatement(sql.toString());
+        for (int i = 0; i < valores.size(); i++) {
+            ps.setObject(i + 1, valores.get(i));
+        }
+        ps.executeUpdate();
     }
 
     public ResponseDTO<ProductosModel> eliminar(Usuario usu, ProductosDTO productos) throws SQLException {return null;}
@@ -95,7 +124,7 @@ public class ProductosService {
             ProductosModel producto = ProductosModel.builder()
                     .id(rs.getLong("id"))
                     .codigo(rs.getString("codigo"))
-                    .descripcion(rs.getString("nombre"))
+                    .nombre(rs.getString("nombre"))
                     .stock(rs.getBoolean("stock"))
                     .precio(preciosService.listarPorProducto(usu, rs.getLong("id")))
                     .build();
@@ -108,5 +137,13 @@ public class ProductosService {
                 .dataResponse(productosList)
                 .totalRegistros(totalRegistros)
                 .build();
+    }
+
+    private String convertirNombreCampo(String nombreCampo) {
+        return switch (nombreCampo){
+            case "unidadMed" -> "unidad_medida";
+            case "categoriaId" -> "categoria_id";
+            default -> nombreCampo.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+        };
     }
 }

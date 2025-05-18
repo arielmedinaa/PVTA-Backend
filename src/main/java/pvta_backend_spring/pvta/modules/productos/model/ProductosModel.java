@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class ProductosModel {
     long id;
     String codigo;
+    String nombre;
     String descripcion;
     String familia;
     String marca;
@@ -26,12 +28,13 @@ public class ProductosModel {
     //List<DepositoProducto> depositoProducto;
     double cantidad;
     String promocion;
-    boolean promoActiva;
+    String proveedor;
     String tipodescuento;
     long valordescuento;
     int porcentajedescuento;
-    LocalDate fecini;
-    LocalDate fecfin;
+    Timestamp fecini;
+    Timestamp fecfin;
     String tipoProducto;
     double cantstock;
+    String nomenclatura;
 }
