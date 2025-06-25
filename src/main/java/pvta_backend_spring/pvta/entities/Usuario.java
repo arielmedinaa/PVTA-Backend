@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class Usuario {
-    private String usulic;       // sub
+    private String usulic;
     private String email;
-    private String usuip;        // db_host
-    private String usupuerto;    // db_port
-    private String passbd;       // db_password
-    private String usubd;        // database_name
+    private String usuip;
+    private String usupuerto;
+    private String passbd;
+    private String usubd;
     private String usuariobd;
 }

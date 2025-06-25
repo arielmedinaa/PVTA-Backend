@@ -4,9 +4,11 @@ import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.conexion.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
+import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
 import pvta_backend_spring.pvta.modules.clientes.models.ClienteModel;
 import pvta_backend_spring.pvta.modules.clientes.models.dto.ClientesDTO;
@@ -68,7 +70,7 @@ public class ClienteService {
 
     public void update(long id, ClientesDTO dto, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
-        StringBuilder sb = new StringBuilder("UPDATE cliente SET ");
+        StringBuilder sb = new StringBuilder("UPDATE public.clienteproveedor SET ");
         List<Object> valores = new ArrayList<>();
         for (var field : ClienteModel.class.getDeclaredFields()) {
             field.setAccessible(true);
@@ -94,9 +96,88 @@ public class ClienteService {
         ps.executeQuery();
     }
 
+    public ResponseDTO<Object> delete(long id, Usuario usuario) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usuario);
+        try(PreparedStatement psDlt = conn.prepareStatement("""
+                DELETE FROM public.clienteproveedor
+                WHERE id=?
+                """)){
+            psDlt.setLong(1, id);
+            psDlt.executeQuery();
+            return ResponseDTO.builder()
+                    .messageResponse("CLIENTE ELIMINADO CON EXITO")
+                    .dataResponse("OK").build();
+        }catch (Exception e){
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al intentar eliminar el cliente con id " + id, e);
+        }
+    }
 
-    public ResponseDTO<String> delete(long id, Usuario usuario) throws SQLException {
-        return null;
+    public ResponseDTO<Object> findAll(Usuario usuario, @Validated GlobalFilters filters) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usuario);
+        StringBuilder sbSlt = new StringBuilder("SELECT id, ruc, nombre, mail, telefono, tipo, direccion, natrec, tipope, tipcont, tipdoc, numerodoc, ciuemidesc, paisemidesc, paisemi, nroconstancia, nrocontrol FROM public.clienteproveedor");
+        boolean hasWhere = false;
+
+        if (filters.getId() != 0) {
+            sbSlt.append(" WHERE id = ").append(filters.getId());
+            hasWhere = true;
+        }
+        if (!filters.getFechaDesde().isEmpty()) {
+            sbSlt.append(hasWhere ? " AND" : " WHERE");
+            sbSlt.append(" fecha >= '").append(filters.getFechaDesde()).append("'");
+            hasWhere = true;
+        }
+        if (!filters.getFechaHasta().isEmpty()) {
+            sbSlt.append(hasWhere ? " AND" : " WHERE");
+            sbSlt.append(" fecha <= '").append(filters.getFechaHasta()).append("'");
+            hasWhere = true;
+        }
+        if (!filters.getRuc().isEmpty()) {
+            sbSlt.append(hasWhere ? " AND" : " WHERE");
+            sbSlt.append(" ruc = '").append(filters.getRuc()).append("'");
+            hasWhere = true;
+        }
+        if (!filters.getNombre().isEmpty()) {
+            sbSlt.append(hasWhere ? " AND" : " WHERE");
+            sbSlt.append(" nombre = '").append(filters.getNombre()).append("'");
+        }
+
+        sbSlt.append(" LIMIT ").append(filters.getLimit()).append(" OFFSET ").append(filters.getOffset());
+
+        try (PreparedStatement ps = conn.prepareStatement(sbSlt.toString())) {
+            @Cleanup ResultSet rs = ps.executeQuery();
+            List<ClienteModel> clientes = new ArrayList<>();
+            while (rs.next()) {
+                ClientesDTO dto = new ClientesDTO(
+                        rs.getLong("id"),
+                        rs.getString("ruc"),
+                        rs.getString("nombre"),
+                        rs.getString("mail"),
+                        rs.getString("telefono"),
+                        rs.getString("tipo"),
+                        rs.getString("direccion"),
+                        rs.getString("natrec"),
+                        rs.getInt("tipope"),
+                        rs.getInt("tipcont"),
+                        rs.getInt("tipdoc"),
+                        rs.getString("numerodoc"),
+                        rs.getString("ciuemidesc"),
+                        rs.getString("paisemidesc"),
+                        rs.getString("paisemi"),
+                        rs.getString("nroconstancia"),
+                        rs.getString("nrocontrol")
+                );
+                clientes.add(convertDtoToModel(dto, dto.id()));
+            }
+
+            return ResponseDTO.builder()
+                    .messageResponse("CLIENTES ENCONTRADOS")
+                    .dataResponse(clientes)
+                    .build();
+        } catch (Exception e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al intentar obtener los clientes", e);
+        }
     }
 
     private ClienteModel convertDtoToModel(ClientesDTO dto, long id) {
