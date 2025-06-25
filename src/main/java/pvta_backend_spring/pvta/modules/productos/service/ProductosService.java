@@ -10,6 +10,7 @@ import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 import pvta_backend_spring.pvta.modules.productos.model.ProductosModel;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
+import pvta_backend_spring.pvta.modules.productos.utiles.ExcelMigration;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -74,13 +75,12 @@ public class ProductosService {
         }
     }
 
-
-    public void actualizar(Usuario usu, ProductosModel productos) throws SQLException, IllegalAccessException {
+    public void actualizar(Usuario usu, ProductosDTO productos) throws SQLException, IllegalAccessException {
         @Cleanup Connection conn = cone.getConnection(usu);
         StringBuilder sql = new StringBuilder("UPDATE public.productos SET ");
         List<Object> valores = new ArrayList<>();
 
-        for (var field : ProductosModel.class.getDeclaredFields()) {
+        for (var field : ProductosDTO.class.getDeclaredFields()) {
             field.setAccessible(true);
             String nombreCampo = field.getName();
             Object valor = field.get(productos);
@@ -101,7 +101,7 @@ public class ProductosService {
         }
         sql.setLength(sql.length() - 2);
         sql.append(" WHERE id = ?");
-        valores.add(productos.getId());
+        valores.add(productos.id());
         @Cleanup PreparedStatement ps = conn.prepareStatement(sql.toString());
         for (int i = 0; i < valores.size(); i++) {
             ps.setObject(i + 1, valores.get(i));
@@ -141,7 +141,7 @@ public class ProductosService {
 
     private String convertirNombreCampo(String nombreCampo) {
         return switch (nombreCampo){
-            case "unidadMed" -> "unidad_medida";
+            case "unidadMedida" -> "unidad_medida";
             case "categoriaId" -> "categoria_id";
             default -> nombreCampo.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
         };
