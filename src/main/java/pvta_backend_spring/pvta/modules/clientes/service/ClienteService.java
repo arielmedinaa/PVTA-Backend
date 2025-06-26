@@ -30,43 +30,52 @@ public class ClienteService {
 
     public ResponseDTO<Object> create(ClientesDTO dto, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
-        @Cleanup PreparedStatement ps = conn.prepareStatement("""
-            INSERT INTO clienteproveedor (
-                ruc, nombre, mail, telefono, tipo,
-                direccion, natrec, tipope, tipcont, tipdoc,
-                numerodoc, ciumeidesc, paisemidesc, paisemi,
-                nroconstancia, nrocontrol
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, PreparedStatement.RETURN_GENERATED_KEYS);
+        try (PreparedStatement ps = conn.prepareStatement("""
+        INSERT INTO clienteproveedor (
+            ruc, nombre, mail, telefono, tipo,
+            direccion, natrec, tipope, tipcont, tipdoc,
+            numerodoc, ciuemidesc, paisemidesc, paisemi,
+            nroconstancia, nrocontrol
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
-        ps.setString(1, dto.ruc());
-        ps.setString(2, dto.nombre());
-        ps.setString(3, dto.mail());
-        ps.setString(4, dto.telefono());
-        ps.setString(5, dto.tipo());
-        ps.setString(6, dto.direccion());
-        ps.setString(7, dto.natrec());
-        ps.setInt(8, dto.tipope());
-        ps.setInt(9, dto.tipcont());
-        ps.setInt(10, dto.tipdoc());
-        ps.setString(11, dto.numerodoc());
-        ps.setString(12, dto.ciuemidesc());
-        ps.setString(13, dto.paisemidesc());
-        ps.setString(14, dto.paisemi());
-        ps.setString(15, dto.nroconstancia());
-        ps.setString(16, dto.nrocontrol());
-        ps.executeQuery();
+            ps.setString(1, dto.ruc());
+            ps.setString(2, dto.nombre());
+            ps.setString(3, dto.mail());
+            ps.setString(4, dto.telefono());
+            ps.setString(5, dto.tipo());
+            ps.setString(6, dto.direccion());
+            ps.setString(7, dto.natrec());
+            ps.setInt(8, dto.tipope());
+            ps.setInt(9, dto.tipcont());
+            ps.setInt(10, dto.tipdoc());
+            ps.setString(11, dto.numerodoc());
+            ps.setString(12, dto.ciuemidesc());
+            ps.setString(13, dto.paisemidesc());
+            ps.setString(14, dto.paisemi());
+            ps.setString(15, dto.nroconstancia());
+            ps.setString(16, dto.nrocontrol());
 
-        @Cleanup ResultSet rs = ps.getGeneratedKeys();
-        if (rs.next()) {
-            ClienteModel cliente = convertDtoToModel(dto, rs.getLong(1));
-            return ResponseDTO.builder()
-                    .messageResponse("CLIENTE REGISTRADO CON EXITO")
-                    .dataResponse(cliente).build();
+            ps.executeUpdate();
+
+            @Cleanup ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                long idGenerado = rs.getLong(1);
+                ClienteModel cliente = convertDtoToModel(dto, idGenerado);
+                return ResponseDTO.builder()
+                        .messageResponse("CLIENTE REGISTRADO CON EXITO")
+                        .dataResponse(cliente)
+                        .build();
+            } else {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error al crear cliente");
+                throw new SQLException("No se pudo obtener el ID generado del cliente.");
+            }
+        } catch (Exception e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error al ejecutar el query de creacion", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al ejecutar el query de creacion", e);
         }
-
-        return null;
     }
+
 
     public void update(long id, ClientesDTO dto, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
