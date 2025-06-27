@@ -15,8 +15,9 @@ public class GlobalFilters {
     String fechaHasta;
     String sucursal;
     String deposito;
-    String ruc;
+    String ruc, codigo, descripcion;
     String nombre;
+    boolean enStock, pocoStock, sinStock;
     long limit;
     long offset;
 }

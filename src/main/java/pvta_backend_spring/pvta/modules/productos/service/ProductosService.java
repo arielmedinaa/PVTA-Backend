@@ -4,13 +4,13 @@ import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
-import pvta_backend_spring.pvta.conexion.ConexionBusiness;
+import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
+import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
 import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 import pvta_backend_spring.pvta.modules.productos.model.ProductosModel;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
-import pvta_backend_spring.pvta.modules.productos.utiles.ExcelMigration;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -109,14 +109,34 @@ public class ProductosService {
         ps.executeUpdate();
     }
 
-    public ResponseDTO<ProductosModel> eliminar(Usuario usu, ProductosDTO productos) throws SQLException {return null;}
-
-    public ResponseDTO listar(Usuario usu) throws SQLException {
+    public ResponseDTO<Object> eliminar(Usuario usu, ProductosDTO productos) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usu);
         @Cleanup PreparedStatement ps = conn.prepareStatement("""
-            SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros
-            FROM public.productos p;
-            """);
+                DELETE FROM public.productos WHERE id = ?;
+                """);
+        ps.setLong(1, productos.id());
+        ps.executeUpdate();
+        return ResponseDTO.builder()
+                .dataResponse(ProductosModel.builder()
+                .id(productos.id())
+                .build())
+                .messageResponse("PRODUCTO ELIMINADO CON EXITO")
+                .build();
+    }
+
+    public ResponseDTO listar(Usuario usu, GlobalFilters filter) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usu);
+        StringBuilder sb = new StringBuilder("""
+                SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros
+                FROM public.productos p
+                """);
+        if(filter.getCodigo() != null){
+            sb.append(" WHERE codigo LIKE '%").append(filter.getCodigo()).append("%'");
+        }
+        if(filter.getDescripcion() != null){
+            sb.append(" WHERE descripcion LIKE '%").append(filter.getDescripcion()).append("%'");
+        }
+        @Cleanup PreparedStatement ps = conn.prepareStatement(sb.toString());
         @Cleanup ResultSet rs = ps.executeQuery();
         List<ProductosModel> productosList = new ArrayList<>();
         long totalRegistros = 0;

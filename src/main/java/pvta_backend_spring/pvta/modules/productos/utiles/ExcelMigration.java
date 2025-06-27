@@ -7,7 +7,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import pvta_backend_spring.pvta.conexion.ConexionBusiness;
+import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;

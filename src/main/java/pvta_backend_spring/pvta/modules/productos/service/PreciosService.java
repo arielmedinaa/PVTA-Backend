@@ -3,7 +3,7 @@ package pvta_backend_spring.pvta.modules.productos.service;
 import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pvta_backend_spring.pvta.conexion.ConexionBusiness;
+import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 

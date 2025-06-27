@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
-import pvta_backend_spring.pvta.conexion.ConexionBusiness;
+import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
@@ -31,14 +31,13 @@ public class ClienteService {
     public ResponseDTO<Object> create(ClientesDTO dto, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
         try (PreparedStatement ps = conn.prepareStatement("""
-        INSERT INTO clienteproveedor (
-            ruc, nombre, mail, telefono, tipo,
-            direccion, natrec, tipope, tipcont, tipdoc,
-            numerodoc, ciuemidesc, paisemidesc, paisemi,
-            nroconstancia, nrocontrol
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, PreparedStatement.RETURN_GENERATED_KEYS)) {
-
+                    INSERT INTO clienteproveedor (
+                        ruc, nombre, mail, telefono, tipo,
+                        direccion, natrec, tipope, tipcont, tipdoc,
+                        numerodoc, ciuemidesc, paisemidesc, paisemi,
+                        nroconstancia, nrocontrol
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, dto.ruc());
             ps.setString(2, dto.nombre());
             ps.setString(3, dto.mail());
@@ -56,12 +55,10 @@ public class ClienteService {
             ps.setString(15, dto.nroconstancia());
             ps.setString(16, dto.nrocontrol());
             ps.executeUpdate();
-
             @Cleanup ResultSet rs = ps.getGeneratedKeys();
             if (rs.next()) {
                 long idGenerado = rs.getLong(1);
                 ClienteModel cliente = convertDtoToModel(dto, idGenerado);
-                System.out.println(cliente);
                 return ResponseDTO.builder()
                         .messageResponse("CLIENTE REGISTRADO CON EXITO")
                         .dataResponse(cliente)
@@ -70,9 +67,20 @@ public class ClienteService {
                 Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error al crear cliente");
                 throw new SQLException("No se pudo obtener el ID generado del cliente.");
             }
+        } catch (SQLException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error SQL al crear cliente", e);
+            String sqlState = e.getSQLState();
+            String errorMessage = e.getMessage().toLowerCase();
+
+            if ("23505".equals(sqlState) || errorMessage.contains("duplicate") ||
+                    errorMessage.contains("unique") || errorMessage.contains("already exists")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CLIENTE YA EXISTENTE", e);
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al ejecutar el query de creacion", e);
+            }
         } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error al ejecutar el query de creacion", e);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al ejecutar el query de creacion", e);
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error inesperado al crear cliente", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error inesperado al crear cliente", e);
         }
     }
 

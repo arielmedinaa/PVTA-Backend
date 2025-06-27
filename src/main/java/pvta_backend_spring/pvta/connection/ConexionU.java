@@ -1,4 +1,4 @@
-package pvta_backend_spring.pvta.conexion;
+package pvta_backend_spring.pvta.connection;
 
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.dbcp.BasicDataSource;

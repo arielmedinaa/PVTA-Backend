@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import pvta_backend_spring.pvta.context.UsuarioContext;
 import pvta_backend_spring.pvta.entities.Usuario;
+import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
 import pvta_backend_spring.pvta.modules.productos.service.ProductosService;
 import pvta_backend_spring.pvta.modules.productos.utiles.ExcelMigration;
@@ -20,29 +22,28 @@ import java.sql.SQLException;
 public class ProductosController {
     private final ProductosService productosService;
     private final ExcelMigration excelMigration;
-    private final Utiles utiles;
 
     @PostMapping("/grabar")
-    public ResponseEntity<?> grabar(@RequestHeader("Authorization") String token, @RequestBody ProductosDTO data) throws SQLException {
-        Usuario usu = utiles.leerToken(token);
+    public ResponseEntity<?> grabar(@RequestBody ProductosDTO data) throws SQLException {
+        Usuario usu = UsuarioContext.getUsuario();
         return ResponseEntity.ok().body(productosService.grabar(usu, data));
     }
 
     @PostMapping("/actualizar")
-    public void actualizarProductos(@RequestHeader("Authorization") String token, @RequestBody ProductosDTO data) throws SQLException, IllegalAccessException {
-        Usuario usu = utiles.leerToken(token);
+    public void actualizarProductos(@RequestBody ProductosDTO data) throws SQLException, IllegalAccessException {
+        Usuario usu = UsuarioContext.getUsuario();
         productosService.actualizar(usu, data);
     }
 
     @GetMapping
-    public ResponseEntity<?> listar(@RequestHeader("Authorization") String token) throws SQLException {
-        Usuario usu = utiles.leerToken(token);
-        return ResponseEntity.ok().body(productosService.listar(usu));
+    public ResponseEntity<?> listar(@RequestBody GlobalFilters filters) throws SQLException {
+        Usuario usu = UsuarioContext.getUsuario();
+        return ResponseEntity.ok().body(productosService.listar(usu, filters));
     }
 
     @PostMapping(value = "/migrarExcelProductos", consumes = "multipart/form-data")
-    public ResponseEntity<?>migrarExcelProductos(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) throws SQLException, IOException {
-        Usuario usu = utiles.leerToken(token);
+    public ResponseEntity<?>migrarExcelProductos(@RequestParam("file") MultipartFile file) throws SQLException, IOException {
+        Usuario usu = UsuarioContext.getUsuario();
         return ResponseEntity.ok().body(excelMigration.importarDesdeExcel(file, usu));
     }
 }

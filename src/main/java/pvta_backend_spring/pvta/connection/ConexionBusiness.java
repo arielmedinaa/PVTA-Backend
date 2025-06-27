@@ -1,4 +1,4 @@
-package pvta_backend_spring.pvta.conexion;
+package pvta_backend_spring.pvta.connection;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.dbcp.BasicDataSource;

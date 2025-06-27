@@ -5,11 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ResponseStatusException;
-import pvta_backend_spring.pvta.conexion.ConexionBusiness;
+import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
 import pvta_backend_spring.pvta.modules.entrada.model.DTO.EntradaDTO;
-import pvta_backend_spring.pvta.modules.entrada.model.EntradaDetalleModel;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

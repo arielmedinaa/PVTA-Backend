@@ -2,10 +2,14 @@ package pvta_backend_spring.pvta.utiles;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.entities.Usuario;
 
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Component
 public class Utiles {
@@ -17,22 +21,25 @@ public class Utiles {
             token = token.substring(7);
         }
 
-        Claims claims = Jwts.parser()
-                .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
-                .parseClaimsJws(token)
-                .getBody();
+        try{
+            Claims claims = Jwts.parser()
+                    .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
+                    .parseClaimsJws(token)
+                    .getBody();
 
-        Usuario usuario = new Usuario();
-        usuario.setUsulic(claims.get("sub", String.class));
-        usuario.setEmail(claims.get("email", String.class));
-        usuario.setUsuip(claims.get("db_host", String.class));
-        usuario.setUsupuerto(claims.get("db_port", String.class));
-        usuario.setPassbd(claims.get("db_password", String.class));
-        usuario.setUsubd(claims.get("database_name", String.class));
-        usuario.setUsuariobd("postgres");
+            Usuario usuario = new Usuario();
+            usuario.setUsulic(claims.get("sub", String.class));
+            usuario.setEmail(claims.get("email", String.class));
+            usuario.setUsuip(claims.get("db_host", String.class));
+            usuario.setUsupuerto(claims.get("db_port", String.class));
+            usuario.setPassbd(claims.get("db_password", String.class));
+            usuario.setUsubd(claims.get("database_name", String.class));
+            usuario.setUsuariobd("postgres");
 
-        return usuario;
+            return usuario;
+        } catch (Exception e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido", e);
+        }
     }
-
-
 }
