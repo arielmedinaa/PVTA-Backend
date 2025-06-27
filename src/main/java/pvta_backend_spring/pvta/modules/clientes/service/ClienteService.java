@@ -55,13 +55,13 @@ public class ClienteService {
             ps.setString(14, dto.paisemi());
             ps.setString(15, dto.nroconstancia());
             ps.setString(16, dto.nrocontrol());
-
             ps.executeUpdate();
 
             @Cleanup ResultSet rs = ps.getGeneratedKeys();
             if (rs.next()) {
                 long idGenerado = rs.getLong(1);
                 ClienteModel cliente = convertDtoToModel(dto, idGenerado);
+                System.out.println(cliente);
                 return ResponseDTO.builder()
                         .messageResponse("CLIENTE REGISTRADO CON EXITO")
                         .dataResponse(cliente)
@@ -75,7 +75,6 @@ public class ClienteService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error al ejecutar el query de creacion", e);
         }
     }
-
 
     public void update(long id, ClientesDTO dto, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
@@ -105,7 +104,7 @@ public class ClienteService {
         ps.executeQuery();
     }
 
-    public ResponseDTO<Object> delete(long id, Usuario usuario) throws SQLException {
+    public ResponseDTO<Object> delete(Long id, Usuario usuario) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
         try(PreparedStatement psDlt = conn.prepareStatement("""
                 DELETE FROM public.clienteproveedor
@@ -131,22 +130,22 @@ public class ClienteService {
             sbSlt.append(" WHERE id = ").append(filters.getId());
             hasWhere = true;
         }
-        if (!filters.getFechaDesde().isEmpty()) {
+        if (filters.getFechaDesde() != null) {
             sbSlt.append(hasWhere ? " AND" : " WHERE");
             sbSlt.append(" fecha >= '").append(filters.getFechaDesde()).append("'");
             hasWhere = true;
         }
-        if (!filters.getFechaHasta().isEmpty()) {
+        if (filters.getFechaHasta() != null) {
             sbSlt.append(hasWhere ? " AND" : " WHERE");
             sbSlt.append(" fecha <= '").append(filters.getFechaHasta()).append("'");
             hasWhere = true;
         }
-        if (!filters.getRuc().isEmpty()) {
+        if (filters.getRuc() != null) {
             sbSlt.append(hasWhere ? " AND" : " WHERE");
             sbSlt.append(" ruc = '").append(filters.getRuc()).append("'");
             hasWhere = true;
         }
-        if (!filters.getNombre().isEmpty()) {
+        if (filters.getNombre() != null) {
             sbSlt.append(hasWhere ? " AND" : " WHERE");
             sbSlt.append(" nombre = '").append(filters.getNombre()).append("'");
         }
