@@ -35,7 +35,7 @@ public class ProductosController {
         productosService.actualizar(usu, data);
     }
 
-    @GetMapping
+    @PostMapping("/listar")
     public ResponseEntity<?> listar(@RequestBody GlobalFilters filters) throws SQLException {
         Usuario usu = UsuarioContext.getUsuario();
         return ResponseEntity.ok().body(productosService.listar(usu, filters));
