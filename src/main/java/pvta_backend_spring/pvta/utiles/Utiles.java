@@ -8,6 +8,9 @@ import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.entities.Usuario;
 
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,5 +44,10 @@ public class Utiles {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido", e);
         }
+    }
+
+    public String horaParaguayaInsert() {
+        return ZonedDateTime.now(ZoneId.of("America/Asuncion"))
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
 }

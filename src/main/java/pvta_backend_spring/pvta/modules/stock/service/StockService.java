@@ -11,6 +11,7 @@ import pvta_backend_spring.pvta.modules.stock.model.StockModel;
 import pvta_backend_spring.pvta.modules.stock.model.dto.StockDTO;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 @Service
@@ -20,6 +21,11 @@ public class StockService {
 
     public ResponseDTO<StockModel> grabaStock(Usuario usu, @Validated StockDTO data) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usu);
+        try(PreparedStatement psIns = conn.prepareStatement("INSERT INTO stock (id, nombre, descripcion, precio, cantidad) VALUES (?, ?, ?, ?, ?)")){
+            
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return ResponseDTO.<StockModel>builder().build();
     }
 }
