@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +33,15 @@ public class GlobalAdviceException {
         Map<String, Object> response = new HashMap<>();
         response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         response.put("error", "Ocurrió un error inesperado");
+        response.put("details", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(SQLException.class)
+    public ResponseEntity<Object> handlerSqlException(SQLException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        response.put("error", "Error con la conexion a la base de datos");
         response.put("details", ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
