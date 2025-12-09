@@ -13,6 +13,7 @@ public class PrecioModel {
     long id;
     long productoId;
     long precio;
+    long linea;
     boolean activo;
     long iva;
     String tipoPrecio;

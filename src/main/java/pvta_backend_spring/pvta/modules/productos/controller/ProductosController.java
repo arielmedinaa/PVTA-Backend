@@ -46,4 +46,10 @@ public class ProductosController {
         Usuario usu = UsuarioContext.getUsuario();
         return ResponseEntity.ok().body(excelMigration.importarDesdeExcel(file, usu));
     }
+
+    @PostMapping(value = "/migrarExcelPrecios", consumes = "multipart/form-data")
+    public ResponseEntity<?>migrarExcelPrecios(@RequestParam("file") MultipartFile file) throws SQLException, IOException {
+        Usuario usu = UsuarioContext.getUsuario();
+        return ResponseEntity.ok().body(excelMigration.importarPreciosDesdeExcel(file, usu));
+    }
 }

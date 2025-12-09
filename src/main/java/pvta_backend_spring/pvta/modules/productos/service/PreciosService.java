@@ -16,24 +16,41 @@ import java.util.List;
 public class PreciosService {
     private final ConexionBusiness cone;
 
-    public void grabar(Connection conn, PrecioModel data) throws SQLException {
-        @Cleanup PreparedStatement psIns = conn.prepareStatement("""
-                INSERT INTO public.precios
-                (producto_id, precio, activo, iva, tipo_precio, moneda, fecha_creacion)
-                VALUES(?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
-                """, Statement.RETURN_GENERATED_KEYS);
-        psIns.setLong(1, data.getProductoId());
-        psIns.setLong(2, data.getPrecio());
-        psIns.setBoolean(3, data.isActivo());
-        psIns.setLong(4, data.getIva());
-        psIns.setString(5, data.getTipoPrecio());
-        psIns.setString(6, data.getMoneda());
-        psIns.executeUpdate();
-        @Cleanup ResultSet generatedKeys = psIns.getGeneratedKeys();
-        if (generatedKeys.next()) {
-            data.setId(generatedKeys.getLong(1));
-        } else {
-            throw new SQLException("No se pudo obtener el ID del precio insertado.");
+    public void grabar(Usuario usuario, PrecioModel data) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usuario);
+        data.setId(1L);
+
+        if (data.isActivo()) {
+            String sqlCheck = """
+            SELECT 1 FROM precios
+            WHERE id = ? AND activo = TRUE
+            """;
+            try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
+                ps.setLong(1, data.getId()); // id = producto_id o 1 si venía null
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        throw new SQLException("Ya existe un precio activo para este producto.");
+                    }
+                }
+            }
+        }
+
+        String sql = """
+        INSERT INTO precios
+        (id, linea, producto_id, precio, activo, iva, tipo_precio, moneda, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, data.getId());
+            ps.setLong(2, data.getLinea());
+            ps.setLong(3, data.getProductoId());
+            ps.setLong(4, data.getPrecio());
+            ps.setBoolean(5, data.isActivo());
+            ps.setLong(6, data.getIva());
+            ps.setString(7, data.getTipoPrecio());
+            ps.setString(8, data.getMoneda());
+            ps.executeUpdate();
         }
     }
 

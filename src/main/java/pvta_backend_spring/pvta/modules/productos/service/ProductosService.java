@@ -54,7 +54,7 @@ public class ProductosService {
 
             for (PrecioModel precio : productos.precios()) {
                 precio.setProductoId(productoId);
-                preciosService.grabar(conn, precio);
+                preciosService.grabar(usu, precio);
             }
 
             ProductosModel prod = ProductosModel.builder()
@@ -127,15 +127,21 @@ public class ProductosService {
     public ResponseDTO listar(Usuario usu, GlobalFilters filter) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usu);
         StringBuilder sb = new StringBuilder("""
-                SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros
+                SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros, c.nombre_categoria
                 FROM public.productos p
+                inner join categorias c on c.id = p.categoria_id
                 """);
-        if(filter.getCodigo() != null){
+        if(!filter.getCodigo().isEmpty()){
             sb.append(" WHERE codigo LIKE '%").append(filter.getCodigo()).append("%'");
         }
-        if(filter.getDescripcion() != null){
+        if(!filter.getDescripcion().isEmpty()){
             sb.append(" WHERE descripcion LIKE '%").append(filter.getDescripcion()).append("%'");
         }
+
+        sb.append(" LIMIT ")
+                .append(filter.getLimit())
+                .append(" OFFSET ")
+                .append(filter.getOffset());
         @Cleanup PreparedStatement ps = conn.prepareStatement(sb.toString());
         @Cleanup ResultSet rs = ps.executeQuery();
         List<ProductosModel> productosList = new ArrayList<>();
@@ -146,6 +152,8 @@ public class ProductosService {
                     .codigo(rs.getString("codigo"))
                     .nombre(rs.getString("nombre"))
                     .stock(rs.getBoolean("stock"))
+                    .unidadMed(rs.getString("unidad_medida"))
+                    .familia(rs.getString("nombre_categoria"))
                     .precio(preciosService.listarPorProducto(usu, rs.getLong("id")))
                     .build();
 
@@ -157,6 +165,23 @@ public class ProductosService {
                 .dataResponse(productosList)
                 .totalRegistros(totalRegistros)
                 .build();
+    }
+
+    public ProductosModel buscarPorCodigo(Usuario usu, String codigo) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usu);
+        String sql = "SELECT id, codigo FROM productos WHERE codigo = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, codigo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ProductosModel p = new ProductosModel();
+                    p.setId(rs.getLong("id"));
+                    p.setCodigo(rs.getString("codigo"));
+                    return p;
+                }
+            }
+        }
+        return null;
     }
 
     private String convertirNombreCampo(String nombreCampo) {
