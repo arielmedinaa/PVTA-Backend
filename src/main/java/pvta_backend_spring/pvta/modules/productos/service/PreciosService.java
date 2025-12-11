@@ -18,15 +18,14 @@ public class PreciosService {
 
     public void grabar(Usuario usuario, PrecioModel data) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usuario);
-        data.setId(1L);
 
         if (data.isActivo()) {
             String sqlCheck = """
             SELECT 1 FROM precios
-            WHERE id = ? AND activo = TRUE
+            WHERE producto_id = ? AND activo = TRUE
             """;
             try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
-                ps.setLong(1, data.getId()); // id = producto_id o 1 si venía null
+                ps.setLong(1, data.getProductoId());
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         throw new SQLException("Ya existe un precio activo para este producto.");
@@ -35,13 +34,23 @@ public class PreciosService {
             }
         }
 
-        String sql = """
+        if (data.getId() == 0) {
+            String sqlNextId = "SELECT COALESCE(MAX(id), 0) + 1 FROM precios";
+            try (PreparedStatement ps = conn.prepareStatement(sqlNextId);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    data.setId(rs.getLong(1));
+                }
+            }
+        }
+
+        String sqlInsert = """
         INSERT INTO precios
         (id, linea, producto_id, precio, activo, iva, tipo_precio, moneda, fecha_creacion)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
             ps.setLong(1, data.getId());
             ps.setLong(2, data.getLinea());
             ps.setLong(3, data.getProductoId());
@@ -53,7 +62,6 @@ public class PreciosService {
             ps.executeUpdate();
         }
     }
-
 
     public void modificar(Usuario usu, PrecioModel data) throws SQLException, IllegalAccessException {
         @Cleanup Connection conn = cone.getConnection(usu);

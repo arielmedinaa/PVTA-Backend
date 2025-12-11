@@ -40,9 +40,32 @@ public class GlobalAdviceException {
     @ExceptionHandler(SQLException.class)
     public ResponseEntity<Object> handlerSqlException(SQLException ex) {
         Map<String, Object> response = new HashMap<>();
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Error con la conexion a la base de datos");
-        response.put("details", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+
+        if ("23505".equals(ex.getSQLState())) {
+            String detail = ex.getMessage();
+            String columna = "";
+            String valor = "";
+            try {
+                int start = detail.indexOf("Key (") + 5;
+                int end = detail.indexOf(")=", start);
+                if (start > 4 && end > start) {
+                    columna = detail.substring(start, end);
+                }
+                int valStart = detail.indexOf("=(", end) + 2;
+                int valEnd = detail.indexOf(")", valStart);
+                if (valStart > 1 && valEnd > valStart) {
+                    valor = detail.substring(valStart, valEnd);
+                }
+            } catch (Exception ignored) {}
+
+            response.put("error", "Valor duplicado en la base de datos");
+            response.put("details", "Ya existe un registro con " + columna + " = " + valor);
+        } else {
+            response.put("error", "Error con la conexión a la base de datos");
+            response.put("details", ex.getMessage());
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }

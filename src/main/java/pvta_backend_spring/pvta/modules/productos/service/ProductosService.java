@@ -1,5 +1,6 @@
 package pvta_backend_spring.pvta.modules.productos.service;
 
+import jdk.jfr.Category;
 import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -7,9 +8,11 @@ import org.springframework.validation.annotation.Validated;
 import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
+import pvta_backend_spring.pvta.modules.productos.model.CategoriaModel;
 import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 import pvta_backend_spring.pvta.modules.productos.model.ProductosModel;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
+import pvta_backend_spring.pvta.modules.productos.model.dto.CategoriaDTO;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
 
 import java.sql.*;
@@ -59,7 +62,9 @@ public class ProductosService {
 
             ProductosModel prod = ProductosModel.builder()
                     .id(productoId)
+                    .nombre(productos.nombre())
                     .descripcion(productos.descripcion())
+                    .familia(this.obtenerFamiliaProducto(usu, productos.categoriaId()))
                     .codigo(productos.codigo())
                     .stock(productos.stock())
                     .precio(preciosService.listarPorProducto(usu, productoId))
@@ -127,7 +132,7 @@ public class ProductosService {
     public ResponseDTO listar(Usuario usu, GlobalFilters filter) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usu);
         StringBuilder sb = new StringBuilder("""
-                SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros, c.nombre_categoria
+                SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros, c.nombrecategoria
                 FROM public.productos p
                 inner join categorias c on c.id = p.categoria_id
                 """);
@@ -143,6 +148,7 @@ public class ProductosService {
                 .append(" OFFSET ")
                 .append(filter.getOffset());
         @Cleanup PreparedStatement ps = conn.prepareStatement(sb.toString());
+        //System.out.println(ps);
         @Cleanup ResultSet rs = ps.executeQuery();
         List<ProductosModel> productosList = new ArrayList<>();
         long totalRegistros = 0;
@@ -153,7 +159,7 @@ public class ProductosService {
                     .nombre(rs.getString("nombre"))
                     .stock(rs.getBoolean("stock"))
                     .unidadMed(rs.getString("unidad_medida"))
-                    .familia(rs.getString("nombre_categoria"))
+                    .familia(rs.getString("nombrecategoria"))
                     .precio(preciosService.listarPorProducto(usu, rs.getLong("id")))
                     .build();
 
@@ -190,5 +196,48 @@ public class ProductosService {
             case "categoriaId" -> "categoria_id";
             default -> nombreCampo.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
         };
+    }
+
+    //CATEGORIAS
+    public ResponseDTO<?> crearCategoria(Usuario usu, CategoriaDTO data) throws SQLException {
+        long categoriaId;
+        @Cleanup Connection conn = cone.getConnection(usu);
+        @Cleanup PreparedStatement psIns = conn.prepareStatement("""
+                INSERT INTO categorias
+                (nombrecategoria, codigocategoria, fechacreacion, activo, subcategoriaid)
+                VALUES(?, ?, CURRENT_TIMESTAMP, ?, ?);
+                """, Statement.RETURN_GENERATED_KEYS);
+        psIns.setString(1, data.nombre());
+        psIns.setString(2, data.codigo());
+        psIns.setBoolean(3, true);
+        psIns.setLong(4, data.subCategoriaId());
+        psIns.executeUpdate();
+
+        try (ResultSet generatedKeys = psIns.getGeneratedKeys()) {
+            if (generatedKeys.next()) {
+                categoriaId = generatedKeys.getLong(1);
+            } else {
+                throw new SQLException("No se pudo obtener el ID del producto insertado.");
+            }
+        }
+
+        CategoriaModel categoriaModel = new CategoriaModel(categoriaId, data.nombre(), data.codigo(), true, data.fechaCreacion(), data.subCategoriaId());
+        return ResponseDTO.builder()
+                .dataResponse(categoriaModel)
+                .messageResponse("CATEGORIA CREADO CON EXITO")
+                .build();
+    }
+
+    private String obtenerFamiliaProducto(Usuario usu, long id) throws SQLException {
+        @Cleanup Connection conn = cone.getConnection(usu);
+        @Cleanup PreparedStatement ps = conn.prepareStatement("SELECT nombrecategoria FROM categorias WHERE id = ?");
+        ps.setLong(1, id);
+
+        @Cleanup ResultSet rs = ps.executeQuery();
+        if(rs.next()){
+            return rs.getString(1);
+        }
+
+        return "Sin Categoria";
     }
 }
