@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 
 public record StockDTO(
         long id,
+        long idProducto,
         long costo,
         long total,
         int linea,

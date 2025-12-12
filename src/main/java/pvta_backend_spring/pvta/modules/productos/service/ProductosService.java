@@ -3,8 +3,10 @@ package pvta_backend_spring.pvta.modules.productos.service;
 import jdk.jfr.Category;
 import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
@@ -25,7 +27,7 @@ public class ProductosService {
     private final ConexionBusiness cone;
     private final PreciosService preciosService;
 
-    public ResponseDTO grabar(Usuario usu, @Validated ProductosDTO productos) throws SQLException {
+    public ResponseDTO<?> grabar(Usuario usu, @Validated ProductosDTO productos) throws SQLException {
         long productoId = 0;
         try (Connection conn = cone.getConnection(usu)) {
             conn.setAutoCommit(false);
@@ -73,6 +75,7 @@ public class ProductosService {
             conn.commit();
             conn.setAutoCommit(true);
             return ResponseDTO.builder()
+                    .messageResponse("PRODUCTO CREADO EXITOSAMENTE")
                     .dataResponse(prod)
                     .build();
         } catch (Exception e) {
@@ -129,7 +132,7 @@ public class ProductosService {
                 .build();
     }
 
-    public ResponseDTO listar(Usuario usu, GlobalFilters filter) throws SQLException {
+    public ResponseDTO<?> listar(Usuario usu, GlobalFilters filter) throws SQLException {
         @Cleanup Connection conn = cone.getConnection(usu);
         StringBuilder sb = new StringBuilder("""
                 SELECT p.*, (SELECT COUNT(*) FROM public.productos) AS totalRegistros, c.nombrecategoria
@@ -187,7 +190,8 @@ public class ProductosService {
                 }
             }
         }
-        return null;
+
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "EL CODIGO PUEDE UTILIZARSE");
     }
 
     private String convertirNombreCampo(String nombreCampo) {
