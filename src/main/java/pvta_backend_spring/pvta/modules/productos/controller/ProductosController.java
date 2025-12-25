@@ -51,7 +51,8 @@ public class ProductosController {
     @PostMapping(value = "/migrarExcelProductos", consumes = "multipart/form-data")
     public ResponseEntity<?>migrarExcelProductos(@RequestParam("file") MultipartFile file) throws SQLException, IOException {
         Usuario usu = UsuarioContext.getUsuario();
-        return ResponseEntity.ok().body(excelMigration.importarDesdeExcel(file, usu));
+        excelMigration.importarDesdeExcel(file, usu);
+        return ResponseEntity.accepted().body("PRODUCTOS MIGRADOS CON EXITO");
     }
 
     @PostMapping(value = "/migrarExcelPrecios", consumes = "multipart/form-data")

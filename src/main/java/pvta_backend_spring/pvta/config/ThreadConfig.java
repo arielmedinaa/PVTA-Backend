@@ -1,0 +1,30 @@
+package pvta_backend_spring.pvta.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+
+@EnableAsync
+@Configuration
+public class ThreadConfig {
+
+    @Bean(name = "asyncExecutor")
+    public Executor asyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(3);
+        executor.setMaxPoolSize(6);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("AsyncThread-");
+
+        executor.setRejectedExecutionHandler(
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+
+        executor.initialize();
+        return executor;
+    }
+}

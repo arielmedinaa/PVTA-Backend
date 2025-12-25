@@ -5,6 +5,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.response.ResponseDTO;
+import pvta_backend_spring.pvta.modules.productos.event.ProductoImportEvent;
 import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 import pvta_backend_spring.pvta.modules.productos.model.dto.ProductosDTO;
 import pvta_backend_spring.pvta.modules.productos.service.PreciosService;
@@ -32,50 +34,33 @@ public class ExcelMigration {
     private final PreciosService preciosService;
     private final ConexionBusiness cone;
 
-    public List<ResponseDTO> importarDesdeExcel(MultipartFile file, Usuario usuario) throws IOException, SQLException {
-        List<ResponseDTO> respuestas = new ArrayList<>();
+    private final ApplicationEventPublisher publisher;
 
-        try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
+    public void importarDesdeExcel(MultipartFile file, Usuario usuario) throws IOException {
+        int contador = 0;
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = WorkbookFactory.create(is)) {
+
             Sheet sheet = workbook.getSheetAt(0);
-
-            Row header = sheet.getRow(0);
-            List<String> expectedHeaders = List.of("codigo", "nombre", "stock", "descripcion", "unidadMedida", "categoriaId", "proveedor", "nomenclatura");
-
-            for (int i = 0; i < expectedHeaders.size(); i++) {
-                if (!expectedHeaders.get(i).equalsIgnoreCase(header.getCell(i).getStringCellValue().trim())) {
-                    throw new IllegalArgumentException("Encabezado inválido en la columna " + (i + 1));
-                }
-            }
 
             for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
 
-                try {
-                    ProductosDTO productoDTO = new ProductosDTO(
-                            0L,
-                            (long) row.getCell(5).getNumericCellValue(),
-                            row.getCell(0).getStringCellValue(),
-                            row.getCell(1).getStringCellValue(),
-                            row.getCell(2).getBooleanCellValue(),
-                            row.getCell(3).getStringCellValue(),
-                            null, null,
-                            row.getCell(4).getStringCellValue(),
-                            row.getCell(6).getStringCellValue(),
-                            row.getCell(7).getStringCellValue(),
-                            new ArrayList<>()
-                    );
+                ProductosDTO productoDTO = mapearFila(row);
+                publisher.publishEvent(
+                        new ProductoImportEvent(productoDTO, usuario, rowIndex + 1)
+                );
 
-                    ResponseDTO response = productosService.grabar(usuario, productoDTO);
-                    respuestas.add(response);
-                } catch (Exception ex) {
-                    respuestas.add(ResponseDTO.builder().dataResponse("Fila " + (rowIndex + 1) + ": " + ex.getMessage()).build());
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pudo procesar el excel de migracion", ex);
+                contador++;
+                if (contador % 20 == 0) {
+                    Thread.sleep(50);
                 }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-
-        return respuestas;
     }
 
     public List<ResponseDTO> importarPreciosDesdeExcel(MultipartFile file, Usuario usuario) throws IOException, SQLException {
@@ -140,6 +125,22 @@ public class ExcelMigration {
         }
 
         return respuestas;
+    }
+
+    private ProductosDTO mapearFila(Row row) {
+        return new ProductosDTO(
+                0L,
+                (long) row.getCell(5).getNumericCellValue(),
+                row.getCell(0).getStringCellValue(),
+                row.getCell(1).getStringCellValue(),
+                row.getCell(2).getBooleanCellValue(),
+                row.getCell(3).getStringCellValue(),
+                null, null,
+                row.getCell(4).getStringCellValue(),
+                row.getCell(6).getStringCellValue(),
+                row.getCell(7).getStringCellValue(),
+                new ArrayList<>()
+        );
     }
 
 }
