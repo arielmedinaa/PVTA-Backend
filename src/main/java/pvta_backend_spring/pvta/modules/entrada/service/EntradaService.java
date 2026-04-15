@@ -26,7 +26,6 @@ public class EntradaService {
             conn.setAutoCommit(false);
 
             long entradaId = 0;
-
             try (PreparedStatement psInsert = conn.prepareStatement("""
                 INSERT INTO entrada_stock
                 (sucursal_id, numero_entrada, moneda, fecha_creacion, fecha_modificacion, cotizacion)
@@ -67,7 +66,6 @@ public class EntradaService {
                 .build();
     }
 
-
     private void insertarDetalles(Connection conn, long entradaId, List<EntradaDetalleModel> detalles) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
         INSERT INTO public.entrada_stock_detalle
@@ -76,7 +74,6 @@ public class EntradaService {
         """)) {
 
             for (EntradaDetalleModel d : detalles) {
-
                 ps.setLong(1, entradaId);
                 ps.setInt(2, d.getLinea());
                 ps.setLong(3, d.getIdProducto());

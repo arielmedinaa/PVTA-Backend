@@ -17,7 +17,9 @@ public record ProductosDTO(
         String unidadMedida,
         String proveedor,
         String nomenclatura,
-        List<PrecioModel> precios
+        List<PrecioModel> precios,
+        Long cantidadInicial,
+        Long sucursalId
         //ListaPrecios
         //Categorias
         //Imagenes

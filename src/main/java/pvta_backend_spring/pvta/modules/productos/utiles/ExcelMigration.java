@@ -139,7 +139,9 @@ public class ExcelMigration {
                 row.getCell(4).getStringCellValue(),
                 row.getCell(6).getStringCellValue(),
                 row.getCell(7).getStringCellValue(),
-                new ArrayList<>()
+                new ArrayList<>(),
+                0L,
+                0L
         );
     }
 

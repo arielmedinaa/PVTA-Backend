@@ -10,6 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import pvta_backend_spring.pvta.connection.ConexionBusiness;
 import pvta_backend_spring.pvta.entities.Usuario;
 import pvta_backend_spring.pvta.entities.filters.GlobalFilters;
+import pvta_backend_spring.pvta.modules.entrada.model.DTO.EntradaDTO;
+import pvta_backend_spring.pvta.modules.entrada.model.EntradaDetalleModel;
+import pvta_backend_spring.pvta.modules.entrada.service.EntradaService;
 import pvta_backend_spring.pvta.modules.productos.model.CategoriaModel;
 import pvta_backend_spring.pvta.modules.productos.model.PrecioModel;
 import pvta_backend_spring.pvta.modules.productos.model.ProductosModel;
@@ -26,12 +29,12 @@ import java.util.List;
 public class ProductosService {
     private final ConexionBusiness cone;
     private final PreciosService preciosService;
+    private final EntradaService entradaService;
 
     public ResponseDTO<?> grabar(Usuario usu, @Validated ProductosDTO productos) throws SQLException {
         long productoId = 0;
         try (Connection conn = cone.getConnection(usu)) {
             conn.setAutoCommit(false);
-
             try (PreparedStatement psIns = conn.prepareStatement("""
                 INSERT INTO productos (codigo, nombre, stock, descripcion,
                 unidad_medida, categoria_id, proveedor, nomenclatura,
@@ -74,6 +77,32 @@ public class ProductosService {
                     .build();
             conn.commit();
             conn.setAutoCommit(true);
+            
+            if (productos.cantidadInicial() > 0) {
+                EntradaDetalleModel detalle = EntradaDetalleModel.builder()
+                    .idProducto(productoId)
+                    .codigoProducto(productos.codigo())
+                    .idDeposito(1) // Depósito por defecto, podría venir del DTO
+                    .linea(1)
+                    .cantidad(productos.cantidadInicial().intValue())
+                    .costo(0) // Costo inicial, podría venir del DTO
+                    .costome(0.0)
+                    .build();
+                
+                List<EntradaDetalleModel> detalles = new ArrayList<>();
+                detalles.add(detalle);
+                EntradaDTO entradaData = new EntradaDTO(
+                    "001", // número de entrada
+                    productos.precios().getFirst().getMoneda(),
+                    new Timestamp(System.currentTimeMillis()), // fecha de creación
+                    "", // fecha de actualización
+                    productos.sucursalId(),
+                    0, // cotización
+                    detalles
+                );
+                
+                entradaService.grabar(usu, entradaData);
+            }
             return ResponseDTO.builder()
                     .messageResponse("PRODUCTO CREADO EXITOSAMENTE")
                     .dataResponse(prod)
