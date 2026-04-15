@@ -1,0 +1,48 @@
+package pvta_backend_spring.pvta.modules.factura.model.dto;
+import java.sql.Timestamp;
+import java.util.List;
+
+public record FacturaDTO(
+    Long id,
+    Long clienteId,
+    String numeroFactura,
+    String documento,
+    String timbrado,
+    String condicion,
+    Long sucursalId,
+    Timestamp fechaEmision,
+    Timestamp fechaVencimiento,
+    Double gra10,
+    Double gra5,
+    Double exenta,
+    Double total,
+    Double iva10,
+    Double iva5,
+    String moneda,
+    Double cotizacion,
+    Double gra10me,
+    Double gra5me,
+    Double exentame,
+    Double totalme,
+    Double iva10me,
+    Double iva5me,
+    Long cajaId,
+    Long movCajaId,
+    Boolean anulado,
+    String estado,
+    Double porcDesc,
+    Double descuento,
+    Double descuentome,
+    Double herramientame,
+    String origen,
+    Double anticipo,
+    Long idSucursalCliente,
+    // Campos de configuración de crédito
+    Double cuotainicial,
+    Double cuotamensual,
+    Integer cuotadias,
+    Integer cuotacant,
+    Timestamp cuotaprimervenc,
+    Double cuotainicialme,
+    List<DetalleFacturaDTO> detalle
+) {}
